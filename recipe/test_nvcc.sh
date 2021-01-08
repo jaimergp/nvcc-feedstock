@@ -64,8 +64,34 @@ if [[ "${CFLAGS}" == "${CFLAGS_CONDA_NVCC_TEST}" ]]; then
 else
     echo "CFLAGS is incorrectly set to '${CFLAGS}', should be set to '${CFLAGS_CONDA_NVCC_TEST}'" && exit 1
 fi
+
 # Reactivate
 source ${PREFIX}/etc/conda/activate.d/${PKG_NAME}_activate.sh
 
 # Try building something
 nvcc test.cu
+
+# Try different CMake setups
+cd cmake-tests/
+
+# Old-style CMake (deprecated FindCUDA)
+set -x
+rm -rf build || true
+mkdir -p build
+cd build
+cmake ${CMAKE_ARGS} -DMODERN_CUDA=OFF ..
+make
+./diana
+cd ..
+rm -rf build
+
+# New-style CMake (FindCUDAToolkit)
+mkdir -p build
+cd build
+export CUDACXX=/usr/local/cuda/bin/nvcc
+export CUDAHOSTCXX=${CC}
+cmake ${CMAKE_ARGS} -DMODERN_CUDA=ON .. \
+    # -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
+    # -DCMAKE_CUDA_HOST_COMPILER=${CXX} \
+make
+./diana
